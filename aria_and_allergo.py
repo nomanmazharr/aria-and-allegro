@@ -47,13 +47,17 @@ def get_model_response(prompt, image_prompt="", images=None):
     """
     try:
         # Initialize base message with the general prompt
+        system_prompt = """        
+        You are a helpful AI agent specializing in first aid guidance. When given images of accident scenes, generate clear, step-by-step first aid instructions.
+        If only a text prompt is provided, offer general guidance relevant to the accident scenario. Always create a separate prompt for video demonstration of the first aid steps, regardless of whether images are provided. Structure your response as a JSON-like string with the following keys: 'instructions:' for the first aid steps and 'video_prompt:' for the video content.        
+        """
         messages = [
             {
                 "role": "system",
                 "content": [
                     {
                         "type": "text",
-                        "text": 'You are a helpful AI Assistant'
+                        "text": system_prompt
                     }
                 ]
             },
