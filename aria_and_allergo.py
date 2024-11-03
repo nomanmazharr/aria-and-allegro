@@ -30,7 +30,8 @@ def image_to_base64(image_file) -> str:
     try:
         return base64.b64encode(image_file.read()).decode("utf-8")
     except Exception as e:
-        return f"An error occurred: {str(e)}"
+        return f"Failed to parse response {str(e)}"
+
 
 def get_model_response(prompt, image_prompt="", images=None):
     """
@@ -108,9 +109,9 @@ def get_model_response(prompt, image_prompt="", images=None):
 
         return response.choices[0].message.content
     except KeyError as e:
-        return f"Response structure unexpected. Error: {e}"
+        return {"Error": f"Response structure unexpected. Error: {str(e)}"}
     except OpenAIError as e:
-        return f"OpenAI API error: {str(e)}"
+        return {"Error": f"OpenAI API error: {str(e)}"}
     except Exception as e:
         # Catch-all for any other errors
-        return f"An error occurred: {str(e)}"
+        return {"Error":f"An error occurred: {str(e)}"}

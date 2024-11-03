@@ -153,5 +153,4 @@ def get_model_response(prompt, images=None):
     except OpenAIError as e:
         return {"error" : f"OpenAI API error: {str(e)}"}
     except Exception as e:
-        # Catch-all for any other errors
         return {"error" : f"An error occurred: {str(e)}"}
