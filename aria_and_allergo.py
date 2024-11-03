@@ -17,6 +17,7 @@ client = OpenAI(
     api_key=aria_api
 )
 
+
 def image_to_base64(image_file) -> str:
     """
     Converts an uploaded image file to a base64-encoded string.
@@ -31,6 +32,36 @@ def image_to_base64(image_file) -> str:
         return base64.b64encode(image_file.read()).decode("utf-8")
     except Exception as e:
         return f"Failed to parse response {str(e)}"
+
+
+def parse_response(response: str) -> dict:
+    """
+    Parses the model response to extract instructions and video prompt in a text format.
+    
+    Args:
+        response (str): The raw response string from the model.
+
+    Returns:
+        dict: A dictionary containing 'instructions' and 'video_prompt'.
+    """
+    try:
+        # Check for instructions and video prompt sections in response text
+        if "instructions" in response and "video_prompt" in response:
+            # Extract instructions and video prompt using string splits
+            instructions_part = response.split("instructions")[1].split("video_prompt")[0].replace('"', '').replace(',', '')
+            video_prompt_part = response.split("video_prompt")[1].strip().replace('"', '').replace(',', '')
+
+            return {
+                'instructions': instructions_part,
+                'video_prompt': video_prompt_part
+            }
+        else:
+            # Return response as it is if it doesn't follow the expected format
+            return {"error": "Expected format not found in the response."}
+
+    except Exception as e:
+        # Catch-all for any other errors
+        return {"error": f"Failed to parse response: {str(e)}"}
 
 
 def get_model_response(prompt, images=None):
@@ -111,7 +142,11 @@ def get_model_response(prompt, images=None):
             top_p=1
         )
 
-        return response.choices[0].message.content
+        model_response = response.choices[0].message.content
+        parsed_response = parse_response(model_response)
+
+        return parsed_response if parsed_response else {"error": "Failed to parse model response."}
+    
     except KeyError as e:
         return {"Error": f"Response structure unexpected. Error: {str(e)}"}
     except OpenAIError as e:
