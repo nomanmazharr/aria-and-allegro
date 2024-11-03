@@ -10,15 +10,12 @@ prompt = st.text_input("Enter your prompt:", "")
 # File uploader for images
 uploaded_files = st.file_uploader("Upload images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
-# Text input for image-specific prompt (if needed)
-image_prompt = st.text_input("Enter an image-specific prompt (optional):", "")
-
 # Button to submit the inputs
 if st.button("Submit"):
     # Check if there's a prompt or images uploaded
     if prompt or uploaded_files:
         # Get the model response
-        response = get_model_response(prompt, image_prompt, uploaded_files)
+        response = get_model_response(prompt, uploaded_files)
         st.write("Model Response:")
         st.write(response)  # Display the response from the model
     else:

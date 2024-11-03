@@ -33,7 +33,7 @@ def image_to_base64(image_file) -> str:
         return f"Failed to parse response {str(e)}"
 
 
-def get_model_response(prompt, image_prompt="", images=None):
+def get_model_response(prompt, images=None):
     """
     Sends a prompt to the AI model and returns the response.
     
@@ -78,7 +78,7 @@ def get_model_response(prompt, image_prompt="", images=None):
             for image_file in images:
                 base64_image = image_to_base64(image_file)
                 if base64_image.startswith("An error occurred"):  # Handle potential error
-                    return base64_image  # Return the error message
+                    return {"error": base64_image}  # Return the error message
                 image_contents.append(
                     {
                         "type": "image_url",
@@ -95,7 +95,7 @@ def get_model_response(prompt, image_prompt="", images=None):
                 "content": image_contents + [
                     {
                         "type": "text",
-                        "text": f'{image_tags}{image_prompt}'
+                        "text": f'{image_tags}{prompt}'
                     }
                 ]
             })
