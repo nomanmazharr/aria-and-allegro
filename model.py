@@ -3,6 +3,7 @@ import base64
 from openai import OpenAI
 from dotenv import load_dotenv
 from openai import OpenAIError
+import ast
 
 # Load environment variables
 load_dotenv()
@@ -30,9 +31,40 @@ def image_to_base64(image_file) -> str:
     try:
         return base64.b64encode(image_file.read()).decode("utf-8")
     except Exception as e:
-        return f"An error occurred: {str(e)}"
+        return f"Failed to parse response {str(e)}"
 
-def get_model_response(prompt, image_prompt="", images=None):
+
+def parse_response(response: str) -> dict:
+    """
+    Parses the model response to extract instructions and video prompt in a text format.
+    
+    Args:
+        response (str): The raw response string from the model.
+
+    Returns:
+        dict: A dictionary containing 'instructions' and 'video_prompt'.
+    """
+    try:
+        # Check for instructions and video prompt sections in response text
+        if "instructions" in response and "video_prompt" in response:
+            # Extract instructions and video prompt using string splits
+            instructions_part = response.split("instructions")[1].split("video_prompt")[0].replace('"', '').replace(',', '')
+            video_prompt_part = response.split("video_prompt")[1].strip().replace('"', '').replace(',', '')
+
+            return {
+                'instructions': instructions_part,
+                'video_prompt': video_prompt_part
+            }
+        else:
+            # Return response as it is if it doesn't follow the expected format
+            return {"error": "Expected format not found in the response."}
+
+    except Exception as e:
+        # Catch-all for any other errors
+        return {"error": f"Failed to parse response: {str(e)}"}
+
+
+def get_model_response(prompt, images=None):
     """
     Sends a prompt to the AI model and returns the response.
     
@@ -46,13 +78,17 @@ def get_model_response(prompt, image_prompt="", images=None):
     """
     try:
         # Initialize base message with the general prompt
+        system_prompt = """
+        You are a helpful AI agent specializing in first aid guidance. When given images of accident scenes, generate clear, step-by-step first aid instructions.
+        If only a text prompt is provided, offer general guidance relevant to the accident scenario. Always create a separate prompt for video demonstration of the first aid steps, regardless of whether images are provided. Structure your response as a JSON-like string with the following keys: 'instructions:' for the first aid steps and 'video_prompt:' for the video content.
+        """
         messages = [
             {
                 "role": "system",
                 "content": [
                     {
                         "type": "text",
-                        "text": 'You are a helpful AI Assistant'
+                        "text": system_prompt
                     }
                 ]
             },
@@ -73,7 +109,7 @@ def get_model_response(prompt, image_prompt="", images=None):
             for image_file in images:
                 base64_image = image_to_base64(image_file)
                 if base64_image.startswith("An error occurred"):  # Handle potential error
-                    return base64_image  # Return the error message
+                    return {"error": base64_image}  # Return the error message
                 image_contents.append(
                     {
                         "type": "image_url",
@@ -90,7 +126,7 @@ def get_model_response(prompt, image_prompt="", images=None):
                 "content": image_contents + [
                     {
                         "type": "text",
-                        "text": f'{image_tags}{image_prompt}'
+                        "text": f'{image_tags}{prompt}'
                     }
                 ]
             })
@@ -105,12 +141,17 @@ def get_model_response(prompt, image_prompt="", images=None):
             max_tokens=1024,
             top_p=1
         )
+        
+        # return response.choices[0].message.content
+        model_response = response.choices[0].message.content
+        parsed_response = parse_response(model_response)
 
-        return response.choices[0].message.content
+        return parsed_response if parsed_response else {"error": "Failed to parse model response."}
+
     except KeyError as e:
-        return f"Response structure unexpected. Error: {e}"
+        return {"error" : f"Response structure unexpected. Error:{str(e)}"}
     except OpenAIError as e:
-        return f"OpenAI API error: {str(e)}"
+        return {"error" : f"OpenAI API error: {str(e)}"}
     except Exception as e:
         # Catch-all for any other errors
-        return f"An error occurred: {str(e)}"
+        return {"error" : f"An error occurred: {str(e)}"}
