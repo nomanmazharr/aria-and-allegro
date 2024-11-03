@@ -2,7 +2,7 @@ import streamlit as st
 from model import get_model_response
 
 # Set the title of the app
-st.title("AI Image and Text Analysis App")
+st.title("Rescure: Be the Help Until Help Arrives")
 
 # Text input for user prompt
 prompt = st.text_input("Enter your prompt:", "")
@@ -16,8 +16,14 @@ if st.button("Submit"):
     if prompt or uploaded_files:
         # Get the model response
         response = get_model_response(prompt, uploaded_files)
-        st.write("Model Response:")
-        st.write(response)  # Display the response from the model
+        
+        if isinstance(response, dict) and "error" in response:
+            st.error(response["error"])
+        else:
+            st.write("Model Response:")
+            st.write("Instructions:", response.get('instructions', 'Instructions not provided.'))
+            video_prompt = response.get('video_prompt', 'Video prompt not provided.')
+            st.write("Video Prompt:", video_prompt)
     else:
         st.error("Please provide either a prompt or upload images.")
 
